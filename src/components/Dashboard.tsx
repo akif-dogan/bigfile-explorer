@@ -45,18 +45,52 @@ interface Block {
   txCount: number;
 }
 
-const REFETCH_INTERVAL = 30000;
+const REFETCH_INTERVAL = 10000;
+
+interface DashboardData {
+  current: {
+    totalTransactions: number;
+    tps: number;
+    activeAddresses: number;
+    storageCost: number;
+    weaveSize: number;
+    networkSize: number;
+    proofRate: number;
+    height: number;
+    peerCount: number;
+    changes: {
+      transactions: { value: number; isPositive: boolean };
+      size: { value: number; isPositive: boolean };
+      peers: { value: number; isPositive: boolean };
+    };
+  };
+  trends: {
+    transactions: TrendData;
+    weaveSize: TrendData;
+    dataUploaded: TrendData;
+  };
+  recentBlocks: Block[];
+}
+
+interface TrendData {
+  data: Array<{
+    timestamp: string;
+    value: number;
+  }>;
+  total24h: number;
+  eodEstimate: number;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const { data, isLoading } = useQuery('dashboard', async () => {
+  const { data, isLoading } = useQuery<DashboardData>('dashboard', async () => {
     const response = await fetch(`${API_BASE_URL}/api/dashboard`);
     return response.json();
   }, {
     refetchInterval: REFETCH_INTERVAL,
-    staleTime: 15000,
-    cacheTime: 60000,
+    staleTime: 5000,
+    cacheTime: 30000,
     refetchOnWindowFocus: true,
     retry: 2,
     onError: (error) => {
@@ -64,7 +98,7 @@ const Dashboard = () => {
     }
   });
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading || !data) return <LoadingSpinner />;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -72,45 +106,47 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Transactions"
-          value={formatNumber(data.current.totalTransactions)}
+          value={formatNumber(data?.current?.totalTransactions ?? 0)}
           icon={<DocumentIcon className="w-6 h-6" />}
-          change={data.current.changes.transactions}
+          change={data?.current?.changes?.transactions}
         />
         <StatCard
           title="TPS"
-          value={data.current.tps.toFixed(2)}
+          value={typeof data?.current?.tps === 'number' 
+            ? data.current.tps.toFixed(2) 
+            : '0.00'}
           icon={<ChartBarIcon className="w-6 h-6" />}
         />
         <StatCard
           title="Active Nodes"
-          value={formatNumber(data.current.peerCount)}
+          value={formatNumber(data?.current?.peerCount ?? 0)}
           icon={<UsersIcon className="w-6 h-6" />}
-          change={data.current.changes.peers}
+          change={data?.current?.changes?.peers}
         />
         <StatCard
           title="Storage Cost"
-          value={`${data.current.storageCost.toFixed(3)} BIG/GiB`}
+          value={`${data?.current?.storageCost?.toFixed(3) ?? '0.000'} BIG/GiB`}
           icon={<CurrencyDollarIcon className="w-6 h-6" />}
         />
         <StatCard
           title="Weave Size"
-          value={formatBytes(data.current.weaveSize)}
+          value={formatBytes(data?.current?.weaveSize ?? 0)}
           icon={<CircleStackIcon className="w-6 h-6" />}
-          change={data.current.changes.size}
+          change={data?.current?.changes?.size}
         />
         <StatCard
           title="Network Size"
-          value={formatBytes(data.current.networkSize)}
+          value={formatBytes(data?.current?.networkSize ?? 0)}
           icon={<ServerStackIcon className="w-6 h-6" />}
         />
         <StatCard
           title="Proof Rate"
-          value={`${formatNumber(data.current.proofRate)} P/s`}
+          value={`${formatNumber(data?.current?.proofRate ?? 0)} P/s`}
           icon={<CpuChipIcon className="w-6 h-6" />}
         />
         <StatCard
           title="Block Height"
-          value={`#${formatNumber(data.current.height)}`}
+          value={`#${formatNumber(data?.current?.height ?? 0)}`}
           icon={<CubeIcon className="w-6 h-6" />}
         />
       </div>
@@ -119,20 +155,20 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         <TrendChart
           title="Transactions"
-          data={data.trends.transactions.data}
+          data={data?.trends?.transactions?.data ?? []}
           formatValue={formatNumber}
           suffix="tx"
           gradient={{ from: '#3B82F6', to: '#1D4ED8' }}
         />
         <TrendChart
           title="Network Size"
-          data={data.trends.weaveSize.data}
+          data={data?.trends?.weaveSize?.data ?? []}
           formatValue={formatBytes}
           gradient={{ from: '#8B5CF6', to: '#6D28D9' }}
         />
         <TrendChart
           title="Data Uploaded"
-          data={data.trends.dataUploaded.data}
+          data={data?.trends?.dataUploaded?.data ?? []}
           formatValue={formatBytes}
           suffix="/day"
           gradient={{ from: '#10B981', to: '#059669' }}
@@ -163,7 +199,7 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.recentBlocks.map((block: Block) => (
+              {data?.recentBlocks?.map((block: Block) => (
                 <tr 
                   key={block.hash}
                   onClick={() => navigate(`/block/${block.hash}`)}

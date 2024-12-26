@@ -1,61 +1,90 @@
 import React from 'react';
-import { useQuery } from 'react-query';
-import { Link } from 'react-router-dom';
-import { formatBytes, formatTimeAgo } from '../utils/format';
+import { motion } from 'framer-motion';
 import { CubeIcon } from '@heroicons/react/24/outline';
+import { formatBytes, formatBlockTime, formatNumber } from '../utils/format';
 
-interface Block {
-  hash: string;
-  height: number;
-  timestamp: number;
-  size: number;
-  txCount: number;
+interface BlockListProps {
+  blocks: Array<{
+    hash: string;
+    height: number;
+    timestamp: number;
+    size: number;
+    txCount: number;
+  }>;
+  onBlockClick: (hash: string) => void;
 }
 
-const BlockList = () => {
-  const { data, isLoading } = useQuery<Block[]>('blocks', async () => {
-    const response = await fetch('http://thebigfile.info:1984/blocks');
-    return response.json();
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
+const BlockList: React.FC<BlockListProps> = ({ blocks, onBlockClick }) => {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-dark mb-8">Son Bloklar</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data?.map(block => (
-          <Link to={`/block/${block.hash}`} key={block.hash} className="block-card">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center">
-                <CubeIcon className="h-8 w-8 text-primary mr-3" />
-                <div>
-                  <p className="text-lg font-semibold text-dark">#{block.height}</p>
-                  <p className="text-sm text-gray-500">{block.hash.substring(0, 16)}...</p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Boyut</p>
-                <p className="font-medium text-dark">{formatBytes(block.size)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Zaman</p>
-                <p className="font-medium text-dark">{formatTimeAgo(block.timestamp)}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-white rounded-2xl shadow-lg overflow-hidden"
+    >
+      <div className="px-6 py-4 border-b border-gray-100">
+        <h2 className="text-lg font-semibold text-gray-900">Recent Blocks</h2>
       </div>
-    </div>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-100">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Block
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Size
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Transactions
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Time
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-100">
+            {blocks.map((block, index) => (
+              <motion.tr
+                key={block.hash}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: index * 0.05 }}
+                onClick={() => onBlockClick(block.hash)}
+                className="hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-lg bg-blue-50 mr-3">
+                      <CubeIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      #{formatNumber(block.height)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-600">
+                    {formatBytes(block.size)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-600">
+                    {block.txCount}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-600">
+                    {formatBlockTime(block.timestamp)}
+                  </span>
+                </td>
+              </motion.tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
   );
 };
 
