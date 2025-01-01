@@ -3,11 +3,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
-import BlockDetails from './components/BlockDetails';
+import BlockDetailsComponent from './components/BlockDetails';
 import TransactionDetails from './components/TransactionDetails';
 
-// Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    }
+  }
+});
 
 function App() {
   return (
@@ -17,7 +23,7 @@ function App() {
           <Navigation />
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/block/:hash" element={<BlockDetails />} />
+            <Route path="/block/:hashOrHeight" element={<BlockDetailsComponent />} />
             <Route path="/tx/:id" element={<TransactionDetails />} />
           </Routes>
         </div>

@@ -1,51 +1,11 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { formatBytes, formatBlockTime, formatNumber } from '../utils/format';
-import { 
-  ArrowTrendingUpIcon, 
-  UsersIcon, 
-  CircleStackIcon, 
-  CpuChipIcon,
-  ChartBarIcon,
-  CloudArrowUpIcon,
-  CurrencyDollarIcon,
-  DocumentIcon,
-  ServerStackIcon,
-  CubeIcon
-} from '@heroicons/react/24/outline';
-import { 
-  LineChart, Line, XAxis, YAxis, 
-  CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart,
-  Area
-} from 'recharts';
-import TransactionSearch from './TransactionSearch';
-import StatCard from './StatCard';
-import TrendChart from './TrendChart';
+import { CubeIcon } from '@heroicons/react/24/outline';
+import { formatBytes, formatNumber, formatBlockTime } from '../utils/format';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/config';
 import LoadingSpinner from './LoadingSpinner';
-
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
-
-// Örnek veri - normalde API'den alınacak
-const historicalData = [
-  { timestamp: '00:00', tps: 2.1, size: 120, hashRate: 45 },
-  { timestamp: '04:00', tps: 2.4, size: 122, hashRate: 48 },
-  { timestamp: '08:00', tps: 2.2, size: 125, hashRate: 46 },
-  { timestamp: '12:00', tps: 2.8, size: 128, hashRate: 50 },
-  { timestamp: '16:00', tps: 3.0, size: 130, hashRate: 52 },
-  { timestamp: '20:00', tps: 2.7, size: 133, hashRate: 49 },
-  { timestamp: '24:00', tps: 2.5, size: 135, hashRate: 47 },
-];
-
-interface Block {
-  hash: string;
-  height: number;
-  timestamp: number;
-  size: number;
-  txCount: number;
-}
-
-const REFETCH_INTERVAL = 10000;
+import TrendChart from './TrendChart';
 
 interface DashboardData {
   current: {
@@ -65,110 +25,118 @@ interface DashboardData {
     };
   };
   trends: {
-    transactions: TrendData;
-    weaveSize: TrendData;
-    dataUploaded: TrendData;
+    transactions: {
+      data: Array<{ timestamp: string; value: number }>;
+      total24h: number;
+      eodEstimate: number;
+    };
+    weaveSize: {
+      data: Array<{ timestamp: string; value: number }>;
+      total24h: number;
+      eodEstimate: number;
+    };
+    dataUploaded: {
+      data: Array<{ timestamp: string; value: number }>;
+      total24h: number;
+      eodEstimate: number;
+    };
   };
-  recentBlocks: Block[];
-}
-
-interface TrendData {
-  data: Array<{
-    timestamp: string;
-    value: number;
+  recentBlocks: Array<{
+    hash: string;
+    height: number;
+    timestamp: number;
+    size: number;
+    txCount: number;
   }>;
-  total24h: number;
-  eodEstimate: number;
 }
 
 const Dashboard = () => {
   const navigate = useNavigate();
-
-  const { data, isLoading } = useQuery<DashboardData>('dashboard', async () => {
-    const response = await fetch(`${API_BASE_URL}/api/dashboard`);
-    return response.json();
-  }, {
-    refetchInterval: REFETCH_INTERVAL,
-    staleTime: 5000,
-    cacheTime: 30000,
-    refetchOnWindowFocus: true,
-    retry: 2,
-    onError: (error) => {
-      console.error('Dashboard data fetch error:', error);
+  const { data, isLoading, error } = useQuery<DashboardData>(
+    'dashboard',
+    async () => {
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    },
+    {
+      refetchInterval: 10000 // Her 10 saniyede bir yenile
     }
-  });
+  );
 
-  if (isLoading || !data) return <LoadingSpinner />;
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <div>Error loading dashboard data</div>;
+  if (!data) return <div>No data available</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Transactions"
-          value={formatNumber(data?.current?.totalTransactions ?? 0)}
-          icon={<DocumentIcon className="w-6 h-6" />}
-          change={data?.current?.changes?.transactions}
-        />
-        <StatCard
-          title="TPS"
-          value={typeof data?.current?.tps === 'number' 
-            ? data.current.tps.toFixed(2) 
-            : '0.00'}
-          icon={<ChartBarIcon className="w-6 h-6" />}
-        />
-        <StatCard
-          title="Active Nodes"
-          value={formatNumber(data?.current?.peerCount ?? 0)}
-          icon={<UsersIcon className="w-6 h-6" />}
-          change={data?.current?.changes?.peers}
-        />
-        <StatCard
-          title="Storage Cost"
-          value={`${data?.current?.storageCost?.toFixed(3) ?? '0.000'} BIG/GiB`}
-          icon={<CurrencyDollarIcon className="w-6 h-6" />}
-        />
-        <StatCard
-          title="Weave Size"
-          value={formatBytes(data?.current?.weaveSize ?? 0)}
-          icon={<CircleStackIcon className="w-6 h-6" />}
-          change={data?.current?.changes?.size}
-        />
-        <StatCard
-          title="Network Size"
-          value={formatBytes(data?.current?.networkSize ?? 0)}
-          icon={<ServerStackIcon className="w-6 h-6" />}
-        />
-        <StatCard
-          title="Proof Rate"
-          value={`${formatNumber(data?.current?.proofRate ?? 0)} P/s`}
-          icon={<CpuChipIcon className="w-6 h-6" />}
-        />
-        <StatCard
-          title="Block Height"
-          value={`#${formatNumber(data?.current?.height ?? 0)}`}
-          icon={<CubeIcon className="w-6 h-6" />}
-        />
+      {/* Network Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-sm font-medium text-gray-500">Total Transactions</h3>
+          <div className="mt-2 flex items-baseline">
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatNumber(data.current.totalTransactions)}
+            </p>
+            <p className="ml-2 flex items-baseline text-sm font-semibold">
+              {data.current.changes.transactions.isPositive ? '+' : '-'}
+              {data.current.changes.transactions.value}%
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-sm font-medium text-gray-500">Network Size</h3>
+          <div className="mt-2 flex items-baseline">
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatBytes(data.current.networkSize)}
+            </p>
+            <p className="ml-2 flex items-baseline text-sm font-semibold">
+              {data.current.changes.size.isPositive ? '+' : '-'}
+              {data.current.changes.size.value}%
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-sm font-medium text-gray-500">Block Height</h3>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">
+            #{formatNumber(data.current.height)}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-sm font-medium text-gray-500">Connected Peers</h3>
+          <div className="mt-2 flex items-baseline">
+            <p className="text-2xl font-semibold text-gray-900">
+              {data.current.peerCount}
+            </p>
+            <p className="ml-2 flex items-baseline text-sm font-semibold">
+              {data.current.changes.peers.isPositive ? '+' : '-'}
+              {data.current.changes.peers.value}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Charts Section */}
+      {/* Trend Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
         <TrendChart
           title="Transactions"
-          data={data?.trends?.transactions?.data ?? []}
+          data={data.trends.transactions.data}
           formatValue={formatNumber}
           suffix="tx"
           gradient={{ from: '#3B82F6', to: '#1D4ED8' }}
         />
         <TrendChart
           title="Network Size"
-          data={data?.trends?.weaveSize?.data ?? []}
+          data={data.trends.weaveSize.data}
           formatValue={formatBytes}
           gradient={{ from: '#8B5CF6', to: '#6D28D9' }}
         />
         <TrendChart
           title="Data Uploaded"
-          data={data?.trends?.dataUploaded?.data ?? []}
+          data={data.trends.dataUploaded.data}
           formatValue={formatBytes}
           suffix="/day"
           gradient={{ from: '#10B981', to: '#059669' }}
@@ -199,10 +167,10 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data?.recentBlocks?.map((block: Block) => (
+              {data.recentBlocks.map((block) => (
                 <tr 
                   key={block.hash}
-                  onClick={() => navigate(`/block/${block.hash}`)}
+                  onClick={() => navigate(`/block/${block.height}`)}
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
