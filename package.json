@@ -1,7 +1,7 @@
 {
   "name": "bigfile-explorer",
   "version": "0.1.0",
-  "homepage": "https://explorer.thebigfile.info",
+  "homepage": "https://akif-dogan.github.io/bigfile-explorer",
   "private": true,
   "dependencies": {
     "@heroicons/react": "^2.2.0",

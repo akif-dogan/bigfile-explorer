@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router basename="/">
+      <Router basename={process.env.PUBLIC_URL}>
         <div className="min-h-screen bg-gray-50">
           <Navigation />
           <Routes>
