@@ -60,7 +60,8 @@ const Dashboard = () => {
         const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`, {
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
           }
         });
         
