@@ -52,63 +52,23 @@ interface DashboardData {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useQuery<DashboardData>(
+  const { data, isLoading } = useQuery<DashboardData>(
     'dashboard',
     async () => {
-      try {
-        console.log('Fetching dashboard data from:', API_BASE_URL);
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`, {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
-          throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-        
-        return response.json();
-      } catch (err) {
-        console.error('Fetch error:', err);
-        throw err;
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
+      return response.json();
     },
     {
-      refetchInterval: 30000,
-      staleTime: 10000,
-      cacheTime: 60000,
-      retry: 2,
-      retryDelay: 1000,
-      onError: (error) => {
-        console.error('Dashboard query error:', error);
-      }
+      refetchInterval: 10000,
+      retry: 3
     }
   );
 
   if (isLoading) return <LoadingSpinner />;
-  if (error) return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-center">
-      <div className="bg-red-50 p-4 rounded-lg">
-        <h3 className="text-red-800 font-medium">Error loading dashboard data</h3>
-        <p className="text-red-600 mt-2">{(error as Error).message}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200"
-        >
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-  if (!data) return <div>No data available</div>;
+  if (!data) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -37,7 +37,7 @@ axiosInstance.interceptors.response.use(
 );
 
 app.use(cors({
-  origin: ['https://akif-dogan.github.io', 'http://localhost:3000'],
+  origin: ['http://localhost:3000', 'https://akif-dogan.github.io'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept']
 }));
@@ -493,74 +493,41 @@ async function debugNodeInfo() {
 // Dashboard endpoint'i
 app.get('/api/dashboard', async (req, res) => {
   try {
-    // Debug log ekle
-    console.log('Dashboard request received');
+    // Node'dan info bilgilerini al
+    const infoResponse = await axiosInstance.get('/info');
+    const info = infoResponse.data;
 
-    const info = await debugNodeInfo();
-    if (!info) {
-      throw new Error('Could not fetch node info');
+    // Son blokları al
+    const recentBlocks = [];
+    for (let i = 0; i < 5; i++) {
+      const height = info.height - i;
+      if (height < 0) break;
+      
+      const blockResponse = await axiosInstance.get(`/block/height/${height}`);
+      recentBlocks.push({
+        hash: blockResponse.data.indep_hash,
+        height: height,
+        timestamp: blockResponse.data.timestamp * 1000,
+        size: blockResponse.data.weave_size || 0,
+        txCount: blockResponse.data.txs?.length || 0
+      });
     }
 
-    // Debug log ekle
-    console.log('Node info:', info);
-
-    // Node'dan gelen gerçek verileri kullan
+    // Dashboard verilerini oluştur
     const dashboardData = {
       current: {
-        totalTransactions: info.blocks || 0,
-        tps: 0.01,
-        activeAddresses: info.peers || 1,
-        storageCost: 0.1,
-        weaveSize: info.blocks * 1024 * 1024,
-        networkSize: info.blocks * 2 * 1024 * 1024,
-        proofRate: info.blocks || 1,
         height: info.height,
-        peerCount: info.peers,
-        changes: {
-          transactions: { value: 1, isPositive: true },
-          size: { value: 1, isPositive: true },
-          peers: { value: 0, isPositive: true }
-        }
+        peerCount: info.peers?.length || 0,
+        networkSize: info.weave_size || 0,
+        totalTransactions: info.tx_count || 0
       },
-      trends: {
-        transactions: {
-          data: Array.from({ length: 24 }, (_, i) => ({
-            timestamp: new Date(Date.now() - i * 3600000).toLocaleTimeString(),
-            value: Math.floor(Math.random() * 10) + 1
-          })),
-          total24h: 100,
-          eodEstimate: 150
-        },
-        weaveSize: {
-          data: Array.from({ length: 24 }, (_, i) => ({
-            timestamp: new Date(Date.now() - i * 3600000).toLocaleTimeString(),
-            value: (info.blocks || 1) * 1024 * 1024 * (1 + i/24)
-          })),
-          total24h: info.blocks * 1024 * 1024,
-          eodEstimate: info.blocks * 1024 * 1024 * 1.1
-        },
-        dataUploaded: {
-          data: Array.from({ length: 24 }, (_, i) => ({
-            timestamp: new Date(Date.now() - i * 3600000).toLocaleTimeString(),
-            value: 1024 * 1024
-          })),
-          total24h: 24 * 1024 * 1024,
-          eodEstimate: 25 * 1024 * 1024
-        }
-      },
-      recentBlocks: await fetchRecentBlocks(info.height)
+      recentBlocks
     };
-
-    // Debug log ekle
-    console.log('Sending dashboard data');
 
     res.json(dashboardData);
   } catch (error) {
     console.error('Dashboard error:', error);
-    res.status(500).json({ 
-      error: 'Error fetching dashboard data',
-      message: error.message 
-    });
+    res.status(500).json({ error: 'Error fetching dashboard data' });
   }
 });
 

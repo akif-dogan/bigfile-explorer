@@ -3,15 +3,16 @@ const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 
 // API ve Node konfigürasyonu
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://cors-anywhere.herokuapp.com/http://65.108.0.39:1984'
-  : 'http://65.108.0.39:1984';  // Local geliştirme için direkt node'a bağlan
+  ? 'http://65.108.0.39:1984'  // Production'da node'a bağlan
+  : 'http://localhost:3001';    // Development'ta backend'e bağlan
 
-// Node bilgileri
+// Node bilgileri - Ana node'dan gelen güncel bilgiler
 export const NODE_INFO = {
   name: 'BigFile Network',
-  version: 'v1',
-  testnet: true,
-  nodeUrl: 'http://65.108.0.39:1984'
+  version: 1,
+  release: 1,
+  network: 'BigFile.V1',
+  testnet: false
 };
 
 // API endpoint'leri
@@ -20,8 +21,7 @@ export const API_ENDPOINTS = {
   blocks: '/api/blocks',
   block: (hashOrHeight: string | number) => `/api/block/${hashOrHeight}`,
   transaction: (txId: string) => `/api/tx/${txId}`,
-  metrics: '/api/metrics',
-  health: '/api/metrics/health'
+  metrics: '/api/metrics'
 };
 
 // Cache ayarları
