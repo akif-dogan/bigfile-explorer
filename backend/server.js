@@ -36,7 +36,11 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://akif-dogan.github.io', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept']
+}));
 app.use(express.json());
 
 // Metrics endpoint

@@ -55,19 +55,37 @@ const Dashboard = () => {
   const { data, isLoading, error } = useQuery<DashboardData>(
     'dashboard',
     async () => {
-      console.log('Fetching dashboard data...');
-      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`);
-      if (!response.ok) {
-        console.error('Dashboard fetch error:', response.status);
-        throw new Error('Network response was not ok');
+      try {
+        console.log('Fetching dashboard data from:', API_BASE_URL);
+        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+        
+        return response.json();
+      } catch (err) {
+        console.error('Fetch error:', err);
+        throw err;
       }
-      return response.json();
     },
     {
       refetchInterval: 30000,
       staleTime: 10000,
       cacheTime: 60000,
-      retry: 1,
+      retry: 2,
+      retryDelay: 1000,
       onError: (error) => {
         console.error('Dashboard query error:', error);
       }

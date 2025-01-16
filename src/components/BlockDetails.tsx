@@ -64,6 +64,7 @@ export interface BlockDetailsData {
 
 const BlockDetailsComponent: React.FC = () => {
   const { hashOrHeight } = useParams<{ hashOrHeight: string }>();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
 
   const { data: block, isLoading, error } = useQuery<BlockDetailsData>(

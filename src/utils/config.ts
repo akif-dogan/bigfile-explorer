@@ -1,6 +1,6 @@
 // API ve Node konfigürasyonu
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://65.108.0.39:1984'
+  ? 'https://api.thebigfile.info'
   : 'http://localhost:3001';
 
 // Node bilgileri
@@ -8,7 +8,7 @@ export const NODE_INFO = {
   name: 'BigFile Network',
   version: 'v1',
   testnet: true,
-  nodeUrl: 'http://213.239.206.178:1984'
+  nodeUrl: 'http://65.108.0.39:1984'
 };
 
 // API endpoint'leri
