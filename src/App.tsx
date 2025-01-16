@@ -16,9 +16,13 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const basename = process.env.NODE_ENV === 'production' 
+    ? '/bigfile-explorer'
+    : '';
+
   return (
     <QueryClientProvider client={queryClient}>
-      <Router basename={process.env.PUBLIC_URL}>
+      <Router basename={basename}>
         <div className="min-h-screen bg-gray-50">
           <Navigation />
           <Routes>

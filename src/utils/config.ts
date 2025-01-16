@@ -3,8 +3,8 @@ const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 
 // API ve Node konfigürasyonu
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? `${CORS_PROXY}http://65.108.0.39:1984`  // CORS proxy ile HTTP isteği
-  : 'http://localhost:3001';
+  ? 'https://cors-anywhere.herokuapp.com/http://65.108.0.39:1984'
+  : 'http://65.108.0.39:1984';  // Local geliştirme için direkt node'a bağlan
 
 // Node bilgileri
 export const NODE_INFO = {
