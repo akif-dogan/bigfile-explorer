@@ -55,17 +55,40 @@ const Dashboard = () => {
   const { data, isLoading, error } = useQuery<DashboardData>(
     'dashboard',
     async () => {
+      console.log('Fetching dashboard data...');
       const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.dashboard}`);
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) {
+        console.error('Dashboard fetch error:', response.status);
+        throw new Error('Network response was not ok');
+      }
       return response.json();
     },
     {
-      refetchInterval: 10000 // Her 10 saniyede bir yenile
+      refetchInterval: 30000,
+      staleTime: 10000,
+      cacheTime: 60000,
+      retry: 1,
+      onError: (error) => {
+        console.error('Dashboard query error:', error);
+      }
     }
   );
 
   if (isLoading) return <LoadingSpinner />;
-  if (error) return <div>Error loading dashboard data</div>;
+  if (error) return (
+    <div className="max-w-7xl mx-auto px-4 py-8 text-center">
+      <div className="bg-red-50 p-4 rounded-lg">
+        <h3 className="text-red-800 font-medium">Error loading dashboard data</h3>
+        <p className="text-red-600 mt-2">{(error as Error).message}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
   if (!data) return <div>No data available</div>;
 
   return (
