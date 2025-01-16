@@ -7,17 +7,18 @@ const net = require('net');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-// Ana node IP'sini kullan
-const BIGFILE_NODE = 'http://213.239.206.178:1984';
+// Ana node IP'sini güncelle
+const BIGFILE_NODE = 'http://65.108.0.39:1984';
 
 // Axios instance'ı güncelle
 const axiosInstance = axios.create({
-  timeout: 10000, // 10 saniye timeout
+  baseURL: BIGFILE_NODE,
+  timeout: 10000,
   headers: {
     'Accept': 'application/json'
   },
   httpsAgent: new https.Agent({
-    rejectUnauthorized: false // SSL sertifika hatalarını yoksay
+    rejectUnauthorized: false
   })
 });
 
@@ -465,13 +466,12 @@ const CACHE_DURATION = 10000; // 10 saniye
 // Debug fonksiyonunu güncelle
 async function debugNodeInfo() {
   try {
-    const infoResponse = await axiosInstance.get(`${BIGFILE_NODE}/info`);
+    const infoResponse = await axiosInstance.get('/info');
     const info = infoResponse.data;
     
     console.log('Raw Node Info:', info);
 
-    // Node'dan gelen gerçek verileri kullan
-    const enrichedInfo = {
+    return {
       ...info,
       height: info.height || 0,
       blocks: info.blocks || 0,
@@ -480,8 +480,6 @@ async function debugNodeInfo() {
       queue_length: info.queue_length || 0,
       node_state_latency: info.node_state_latency || 0
     };
-
-    return enrichedInfo;
   } catch (error) {
     console.error('Node Info Error:', error.message);
     return null;
@@ -565,25 +563,38 @@ app.get('/api/dashboard', async (req, res) => {
 // Son blokları getirme fonksiyonunu güncelle
 async function fetchRecentBlocks(currentHeight) {
   const blocks = [];
-  const blockCount = 15;
+  const blockCount = Math.min(15, currentHeight);
 
   for (let i = 0; i < blockCount; i++) {
     const height = currentHeight - i;
     if (height < 0) break;
 
     try {
-      const response = await axiosInstance.get(`${BIGFILE_NODE}/block/height/${height}`);
-      if (response.data) {
+      const blockResponse = await axiosInstance.get(`/block/height/${height}`);
+      const block = blockResponse.data;
+
+      if (block) {
+        console.log(`Block ${height} data:`, {
+          size: block.weave_size,
+          txCount: block.txs?.length,
+          timestamp: block.timestamp
+        });
+
         blocks.push({
           height: height,
-          hash: response.data.indep_hash || `block-${height}`,
-          timestamp: response.data.timestamp * 1000,
-          size: response.data.weave_size || response.data.block_size || 0,
-          txCount: (response.data.txs && response.data.txs.length) || 0
+          hash: block.indep_hash,
+          timestamp: block.timestamp * 1000,
+          size: block.weave_size || block.block_size || 0,
+          txCount: Array.isArray(block.txs) ? block.txs.length : 0,
+          miner: block.miner || 'Unknown',
+          reward: block.reward || 0
         });
       }
     } catch (error) {
-      console.error(`Error fetching block at height ${height}:`, error.message);
+      console.error(`Error fetching block at height ${height}:`, {
+        error: error.message,
+        response: error.response?.data
+      });
     }
   }
 
