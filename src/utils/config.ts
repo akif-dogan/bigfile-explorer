@@ -4,7 +4,7 @@ const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 // API ve Node konfigürasyonu
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'http://65.108.0.39:1984'  // Production'da node'a bağlan
-  : 'http://localhost:3001';    // Development'ta backend'e bağlan
+  : 'http://65.108.0.39:1984'; // Development'ta da node'a bağlan
 
 // Node bilgileri - Ana node'dan gelen güncel bilgiler
 export const NODE_INFO = {
@@ -17,11 +17,12 @@ export const NODE_INFO = {
 
 // API endpoint'leri
 export const API_ENDPOINTS = {
-  dashboard: '/api/dashboard',
-  blocks: '/api/blocks',
-  block: (hashOrHeight: string | number) => `/api/block/${hashOrHeight}`,
-  transaction: (txId: string) => `/api/tx/${txId}`,
-  metrics: '/api/metrics'
+  dashboard: '/info',
+  blocks: '/blocks',
+  block: (hashOrHeight: string | number) => `/block/height/${hashOrHeight}`,
+  transaction: (txId: string) => `/tx/${txId}`,
+  metrics: '/metrics',
+  info: '/info'
 };
 
 // Cache ayarları

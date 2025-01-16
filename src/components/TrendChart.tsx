@@ -2,7 +2,10 @@ import React from 'react';
 
 interface TrendChartProps {
   title: string;
-  data: Array<{ timestamp: string; value: number }>;
+  data: Array<{
+    timestamp: number;
+    value: number;
+  }>;
   formatValue: (value: number) => string;
   suffix?: string;
   gradient: {
